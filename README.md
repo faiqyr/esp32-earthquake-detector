@@ -1,131 +1,245 @@
-# Earthquake Detection with MPU6050
+# ESP32 Earthquake Detector
 
-Dokumentasi ini menjelaskan cara menjalankan proyek IoT deteksi gempa berbasis ESP32, MPU6050, LCD I2C, dan platform Blynk. Termasuk instruksi pasang ekstensi Wokwi dan PlatformIO serta ketentuan penggunaan Wokwi.
+Sistem deteksi gempa bumi berbasis IoT menggunakan ESP32 dan sensor akselerometer MPU6050. Data getaran diproses secara real-time untuk menghitung estimasi skala Richter, ditampilkan di LCD 16x2, dan dikirim ke dashboard Blynk melalui WiFi. Sistem juga mengaktifkan LED dan buzzer sesuai level bahaya.
 
-## Persyaratan atau Bisa Langsung Gunakan Platform Wokwi
+Proyek ini dapat dijalankan langsung di simulator **Wokwi** tanpa hardware fisik.
 
-1. **Visual Studio Code**
-   - Buka proyek di VS Code.
+---
 
-2. **PlatformIO**
-   - Install extension `PlatformIO IDE` di VS Code.
-   - PlatformIO digunakan untuk build, upload, dan dependency management.
+## Fitur
 
-3. **Wokwi Extension**
-   - Install extension `Wokwi` atau `Wokwi Simulator` di VS Code.
-   - Pastikan Anda sudah menerima lisensi atau Terms of Service dari Wokwi.
-   - Jika diminta login atau aktivasi, lakukan sesuai petunjuk Wokwi.
+- Kalibrasi baseline otomatis saat pertama menyala
+- Estimasi skala Richter dari data akselerasi (sumbu X, Y, Z)
+- 3 level status: **AMAN** / **WASPADA** / **BAHAYA**
+- Indikator visual: LED hijau, kuning, dan merah
+- Indikator audio: buzzer dengan frekuensi berbeda per level
+- Tampilan real-time di LCD I2C 16x2
+- Pengiriman data ke Blynk Cloud (6 virtual pin)
+- Notifikasi push otomatis via Blynk saat gempa terdeteksi
+- Simulasi penuh via Wokwi
 
-4. **Akses Internet**
-   - Diperlukan untuk mengunduh library PlatformIO dan menghubungkan Blynk.
+---
 
-5. **Tambahkan pada Library.txt(JIKA MENGGUNAKAN PLATFORM WOKWIK)**
-    ```json
-      Adafruit MPU6050
-      Adafruit Unified Sensor
-      LiquidCrystal I2C
-      Blynk
-    ```
+## Komponen Hardware
+
+| Komponen | Jumlah | Keterangan |
+|---|---|---|
+| ESP32 DevKit V1 | 1 | Mikrokontroler utama |
+| MPU6050 | 1 | Sensor akselerometer + giroskop |
+| LCD I2C 16x2 | 1 | Alamat default `0x27` |
+| Buzzer | 1 | Aktif via `tone()` |
+| LED Hijau | 1 | Status AMAN |
+| LED Kuning | 1 | Status WASPADA |
+| LED Merah | 1 | Status BAHAYA |
+| Resistor 220Ω | 3 | Seri dengan setiap LED |
+| Breadboard + kabel jumper | — | — |
+
+---
+
+## Skema Wiring
+
+| Komponen | Pin Komponen | Pin ESP32 |
+|---|---|---|
+| MPU6050 | VCC | 3V3 |
+| MPU6050 | GND | GND |
+| MPU6050 | SDA | GPIO 21 |
+| MPU6050 | SCL | GPIO 22 |
+| LCD I2C | VCC | 3V3 |
+| LCD I2C | GND | GND |
+| LCD I2C | SDA | GPIO 21 |
+| LCD I2C | SCL | GPIO 22 |
+| LED Hijau (via R 220Ω) | Anoda | GPIO 25 |
+| LED Kuning (via R 220Ω) | Anoda | GPIO 26 |
+| LED Merah (via R 220Ω) | Anoda | GPIO 27 |
+| Buzzer | Pin + | GPIO 13 |
+
+---
 
 ## Struktur Proyek
 
-- `platformio.ini` : konfigurasi board ESP32 dan library dependency.
-- `src/main.cpp` : kode utama untuk deteksi gempa, Blynk, dan tampilan LCD.
-- `wokwi.toml` : konfigurasi untuk integrasi dengan Wokwi simulator.
-- `doc/` : contoh tampilan dashboard dan screenshot.
-
-## Komponen yang Dibutuhkan
-
-- ESP32 DevKit V1
-- Modul sensor MPU6050
-- LCD I2C 16x2
-- Buzzer
-- LED hijau, kuning, merah
-- Kabel jumper dan breadboard
-
-## Menjalankan di PlatformIO
-
-1. Buka folder proyek di VS Code.
-2. Pastikan PlatformIO extension sudah terpasang.
-3. Buka panel PlatformIO atau gunakan terminal:
-   - `PlatformIO: Build`
-   - `PlatformIO: Upload`
-4. Jika belum ada library yang terpasang, PlatformIO akan mengunduh otomatis berdasarkan `lib_deps` di `platformio.ini`.
-
-### Konfigurasi Koneksi WiFi dan Blynk
-
-Dalam `src/main.cpp`, ubah:
-
-- `ssid` dan `pass` jika menggunakan WiFi sendiri.
-- `BLYNK_AUTH_TOKEN` dengan token dari aplikasi Blynk Anda.
-- `BLYNK_TEMPLATE_ID` jika menggunakan template Blynk berbeda.
-
-Contoh:
-
-```cpp
-char ssid[] = "Nama_WiFi";
-char pass[] = "Password_WiFi";
+```
+esp32-earthquake-detector/
+├── src/
+│   └── main.cpp              # Logika utama program
+├── include/
+│   ├── config.h              # Kredensial pribadi (tidak di-commit, buat dari .example)
+│   └── config.h.example      # Template konfigurasi — salin ke config.h
+├── doc/
+│   ├── dashboard-view.png    # Contoh tampilan dashboard Blynk
+│   └── data-stream.png       # Contoh tampilan data stream Blynk
+├── diagram.json              # Skema rangkaian Wokwi
+├── wokwi.toml                # Konfigurasi simulator Wokwi
+├── platformio.ini            # Konfigurasi board dan library PlatformIO
+├── .gitignore
+└── README.md
 ```
 
-> Catatan: Kode default menggunakan `Wokwi-GUEST` untuk simulasi Wokwi. Jika menjalankan di perangkat nyata, ganti dengan kredensial WiFi Anda.
+---
 
-## Menjalankan di Wokwi
+## Cara Setup
 
-1. Pastikan extension Wokwi terpasang dan aktif.
-2. Gunakan `wokwi.toml` untuk menunjuk firmware yang dibangun oleh PlatformIO.
-3. Setelah build selesai, jalankan simulator Wokwi dari VS Code.
-4. Jika Wokwi meminta lisensi atau aktivasi, ikuti instruksi untuk mendapatkan izin.
+### 1. Prasyarat
 
-> Jika Anda belum memiliki akun Wokwi, daftar di https://wokwi.com dan selesaikan proses login/aktivasi.
+- [Visual Studio Code](https://code.visualstudio.com/)
+- Extension [PlatformIO IDE](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide)
+- Extension [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=wokwi.wokwi-vscode) *(untuk simulasi)*
+- Akun [Blynk](https://blynk.cloud) *(gratis)*
 
-## Konfigurasi Blynk
+### 2. Clone Repositori
 
-Proyek ini menggunakan Blynk untuk menampilkan data gempa secara realtime:
+```bash
+git clone https://github.com/faiqyr/esp32-earthquake-detector.git
+cd esp32-earthquake-detector
+```
 
-- `V1` = nilai skala Richter
-- `V2` = total akselerasi (g)
-- `V3` = status teks (`AMAN`, `WASPADA`, `BAHAYA!`)
-- `V4` = akselerasi X
-- `V5` = akselerasi Y
-- `V6` = akselerasi Z
+### 3. Buat File Konfigurasi
 
-### Contoh Dashboard Blynk
+```bash
+# Windows
+copy include\config.h.example include\config.h
 
-Gunakan tampilan contoh di folder `doc/` sebagai referensi:
+# Linux / macOS
+cp include/config.h.example include/config.h
+```
 
-- `doc/dashboard-view.png`
-- `doc/data-stream.png`
+Buka `include/config.h` dan isi dengan nilai asli Anda:
 
-Tambahkan widget Blynk sesuai nilai virtual pin di atas.
+```cpp
+// Blynk — dapatkan dari https://blynk.cloud → Template → Info
+#define BLYNK_TEMPLATE_ID   "TMPLxxxxxxxxx"
+#define BLYNK_TEMPLATE_NAME "Nama Template Anda"
+#define BLYNK_AUTH_TOKEN    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+// WiFi
+#define WIFI_SSID "Nama_WiFi_Anda"
+#define WIFI_PASS "Password_WiFi_Anda"
+```
+
+> **Untuk simulasi Wokwi**, gunakan:
+> ```cpp
+> #define WIFI_SSID "Wokwi-GUEST"
+> #define WIFI_PASS ""
+> ```
+
+### 4. Setup Blynk
+
+1. Login ke [blynk.cloud](https://blynk.cloud)
+2. Buat **Template** baru
+3. Tambahkan **Datastream** berikut:
+
+| Virtual Pin | Nama | Tipe | Unit |
+|---|---|---|---|
+| V1 | Skala Richter | Double | SR |
+| V2 | Total Akselerasi | Double | g |
+| V3 | Status | String | — |
+| V4 | Akselerasi X | Double | g |
+| V5 | Akselerasi Y | Double | g |
+| V6 | Akselerasi Z | Double | g |
+
+4. Buat **Event** dengan nama `earthquake_alert` untuk notifikasi push
+5. Salin **Template ID**, **Template Name**, dan **Auth Token** ke `include/config.h`
+
+Lihat folder `doc/` untuk referensi tampilan dashboard.
+
+### 5. Build dan Upload
+
+```bash
+# Via terminal PlatformIO
+pio run --target upload
+
+# Atau gunakan tombol di VS Code PlatformIO panel:
+# Build → Upload
+```
+
+### 6. Jalankan di Wokwi (Simulasi)
+
+1. Build proyek terlebih dahulu (`pio run`)
+2. Buka `diagram.json` di VS Code
+3. Klik tombol **Play** Wokwi
+4. Sensor MPU6050 di simulator dapat digerakkan secara manual untuk mensimulasikan getaran
+
+---
 
 ## Cara Kerja Program
 
-1. ESP32 terhubung ke Blynk dan WiFi.
-2. MPU6050 melakukan pembacaan akselerasi setiap 500 ms.
-3. Kode menghitung perbedaan terhadap baseline kalibrasi.
-4. Status ditentukan berdasarkan ambang batas:
-   - `AMAN` jika getaran kecil.
-   - `WASPADA` jika getaran menengah.
-   - `BAHAYA!` jika getaran kuat.
-5. LED dan buzzer aktif sesuai level bahaya.
-6. Data dikirim ke Blynk untuk ditampilkan.
+```
+Boot
+ └─ Inisialisasi LCD, MPU6050, WiFi, Blynk
+     └─ Kalibrasi baseline (100 sampel selama ~1 detik)
+         └─ Loop setiap 500ms:
+             ├─ Baca akselerasi X, Y, Z dari MPU6050
+             ├─ Hitung delta terhadap baseline
+             ├─ Hitung total akselerasi (magnitude)
+             ├─ Estimasi skala Richter
+             ├─ Tentukan status:
+             │   ├─ < 2.5 m/s²  → AMAN    (LED hijau)
+             │   ├─ < 6.0 m/s²  → WASPADA (LED kuning + buzzer 800Hz)
+             │   └─ ≥ 6.0 m/s²  → BAHAYA  (LED merah + buzzer 2000Hz + notifikasi Blynk)
+             ├─ Tampilkan status & Richter di LCD
+             └─ Kirim V1–V6 ke Blynk
+```
+
+### Formula Estimasi Richter
+
+```
+g    = totalAkselerasi (m/s²) / 9.81
+R    = 1.0 + log10(g + 1.0) × 3.5
+R    = constrain(R, 0.0, 9.0)
+```
+
+---
+
+## Library Dependencies
+
+Tercantum di `platformio.ini`, diunduh otomatis oleh PlatformIO:
+
+| Library | Fungsi |
+|---|---|
+| `blynkkk/Blynk` | Koneksi ke Blynk Cloud |
+| `adafruit/Adafruit MPU6050` | Driver sensor MPU6050 |
+| `adafruit/Adafruit Unified Sensor` | Abstraksi sensor Adafruit |
+| `marcoschwartz/LiquidCrystal_I2C` | Driver LCD I2C |
+
+---
 
 ## Troubleshooting
 
-- `MPU6050 Tidak Terdeteksi!`
-  - Periksa sambungan I2C (SDA ke GPIO 21, SCL ke GPIO 22).
-  - Pastikan sensor diberi daya dan alamat I2C benar.
+**MPU6050 tidak terdeteksi (`MPU6050 ERROR`)**
+- Periksa sambungan SDA (GPIO 21) dan SCL (GPIO 22)
+- Pastikan tegangan VCC terhubung ke 3V3, bukan 5V
+- Verifikasi alamat I2C sensor dengan scanner I2C
 
-- Build gagal karena library:
-  - Pastikan koneksi internet aktif.
-  - Jalankan ulang build di PlatformIO.
+**Build gagal karena library**
+- Pastikan koneksi internet aktif
+- Jalankan ulang: `pio run` — PlatformIO akan mengunduh ulang dependensi
 
-- Wokwi tidak berjalan:
-  - Pastikan extension Wokwi terpasang dan sudah login.
-  - Periksa `wokwi.toml` bahwa jalur firmware benar.
+**Blynk tidak terhubung**
+- Pastikan `BLYNK_AUTH_TOKEN`, `BLYNK_TEMPLATE_ID`, dan `WIFI_SSID`/`WIFI_PASS` di `config.h` sudah benar
+- Periksa apakah device sudah ditambahkan di dashboard Blynk
 
-## Catatan Tambahan
+**Wokwi tidak berjalan**
+- Pastikan sudah melakukan `pio run` (build) terlebih dahulu
+- Periksa `wokwi.toml` bahwa path firmware mengarah ke file `.bin` hasil build
+- Login ulang ke akun Wokwi jika diminta aktivasi
 
-- Jika ingin menggunakan board ESP32 lain, sesuaikan `board` di `platformio.ini`.
-- Jika ingin make Blynk dengan template atau token baru, sesuaikan nilai di `src/main.cpp`.
-- Sertakan dokumentasi `doc/` sebagai referensi tampilan UI agar konfigurasi lebih mudah.
+---
+
+## Keamanan
+
+File `include/config.h` berisi kredensial pribadi (token Blynk dan password WiFi). File ini:
+- Sudah masuk daftar `.gitignore` — **tidak akan pernah ter-commit ke GitHub**
+- Harus dibuat secara manual dari template `include/config.h.example`
+
+Jika token Blynk sudah terlanjur ter-push ke repositori publik, segera regenerate token baru di dashboard Blynk.
+
+---
+
+## Lisensi
+
+Proyek ini dibuat untuk keperluan edukasi. Bebas digunakan dan dimodifikasi.
+
+---
+
+## Penulis
+
+**faiqyr** — [github.com/faiqyr](https://github.com/faiqyr)

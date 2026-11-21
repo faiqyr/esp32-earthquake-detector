@@ -1,12 +1,11 @@
 #include <Arduino.h>
 
-// --- TAMBAHKAN BARIS INI AGAR BLYNK MAU BICARA ---
-#define BLYNK_PRINT Serial 
+// --- AKTIFKAN DEBUG OUTPUT KE SERIAL ---
+#define BLYNK_PRINT Serial
 
-/* --- KONFIGURASI BLYNK (HARUS PERSIS SAMA DENGAN WEB) --- */
-#define BLYNK_TEMPLATE_ID "TMPL6Z0Y1flVc"
-#define BLYNK_TEMPLATE_NAME "Quickstart Template"
-#define BLYNK_AUTH_TOKEN "Xf-99ASej6H0a9Mh50Olh64OEFKWhCX2"
+// --- KONFIGURASI PRIBADI (WiFi, Blynk token) ---
+// Salin include/config.h.example ke include/config.h lalu isi nilainya.
+#include "config.h"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -16,9 +15,9 @@
 #include <Adafruit_Sensor.h>
 #include <LiquidCrystal_I2C.h>
 
-// --- KREDENSIAL WIFI ---
-char ssid[] = "Wokwi-GUEST";
-char pass[] = "";
+// --- KREDENSIAL WIFI (dari config.h) ---
+char ssid[] = WIFI_SSID;
+char pass[] = WIFI_PASS;
 
 // ... (BIAIKAN KODE KE BAWAHNYA TETAP SAMA SEPERTI MILIKMU) ...
 

@@ -1,0 +1,21 @@
+#pragma once
+
+// =============================================================
+// TEMPLATE KONFIGURASI — FILE INI AMAN UNTUK DI-COMMIT KE GIT
+//
+// Cara penggunaan:
+//   1. Salin file ini: copy config.h.example config.h
+//   2. Isi config.h dengan nilai asli Anda
+//   3. JANGAN commit config.h (sudah tercantum di .gitignore)
+// =============================================================
+
+// --- BLYNK ---
+// Dapatkan nilai ini dari https://blynk.cloud → Template → Info
+#define BLYNK_TEMPLATE_ID   "YOUR_BLYNK_TEMPLATE_ID"
+#define BLYNK_TEMPLATE_NAME "YOUR_BLYNK_TEMPLATE_NAME"
+#define BLYNK_AUTH_TOKEN    "YOUR_BLYNK_AUTH_TOKEN"
+
+// --- WIFI ---
+// Gunakan "Wokwi-GUEST" dan "" (kosong) untuk simulasi Wokwi
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASS "YOUR_WIFI_PASSWORD"
